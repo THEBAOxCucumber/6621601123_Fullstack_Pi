@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin - Vehicles</title>
+</head>
+
+<body>
+
+<h2>Manage Vehicles</h2>
+
+<input id="plate" placeholder="Plate">
+<select id="status">
+  <option>ACTIVE</option>
+  <option>IDLE</option>
+</select>
+
+<button onclick="addVehicle()">Add</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Plate</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody id="admin-table"></tbody>
+</table>
+
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+
+</body>
+</html>

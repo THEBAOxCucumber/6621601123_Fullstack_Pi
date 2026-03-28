@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title> Fleet Management Platform</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css"/>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun&display=swap" rel="stylesheet"/>
+</head>
+
+<body>
+
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="logo"> Fleet Management Platform</div>
+    <div id="clock">--:--</div>
+     <button id="role-btn" onclick="auth.handleAuthClick()">
+  GUEST
+</button>
+</button>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+
+  <div class="nav-section">OVERVIEW</div>
+  <div class="nav-item active" onclick="navigate('dashboard.html', this)">
+    Dashboard
+  </div>
+
+  <div class="nav-section">ข้อ 1 — AUTH</div>
+  <div class="nav-item" onclick="navigate('auth.html', this)">
+    Authentication
+  </div>
+
+  <div class="nav-item" onclick="navigate('vehicles.html', this)">
+  Vehicle List
+</div>
+
+<main id="content"></main>
+
+  <div class="nav-section">ข้อ 3 — TRIPS</div>
+  <div class="nav-item" onclick="navigate('trips.html', this)">
+    Trip Manager
+  </div>
+
+  <div class="nav-item" onclick="navigate('tracker.html', this)">
+    Trip Tracker
+  </div>
+
+  <div class="nav-section">ข้อ 4 — MAINTENANCE</div>
+  <div class="nav-item" onclick="navigate('maintenance.html', this)">
+    Maintenance <span class="badge">2</span>
+  </div>
+
+  <div class="nav-item" onclick="navigate('alerts.html', this)">
+    Alert Engine <span class="badge">3</span>
+  </div>
+
+  <div class="nav-section">ข้อ 5 — AUDIT</div>
+  <div class="nav-item" onclick="navigate('audit.html', this)">
+    Audit Log
+  </div>
+
+</nav>
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="section active">
+      <h2>Dashboard</h2>
+
+      <div class="card-grid">
+        <div class="card">Total Vehicles: <span id="total">0</span></div>
+        <div class="card">Trips: <span id="trips">0</span></div>
+      </div>
+    </div>
+<main id="content"></main>
+<div class="nav-item" onclick="loadPage('vehicles.html')">
+  Vehicles
+</div>
+    <!-- VEHICLES -->
+    <div id="vehicles" class="section">
+  <h2>Vehicles</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Plate</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="vehicle-table"></tbody>
+  </table>
+</div>
+
+    <!-- TRIPS -->
+    <div id="trips" class="section">
+      <h2>Trips</h2>
+      <p>Trip data...</p>
+    </div>
+
+  </main>
+</div>
+
+<!-- JS -->
+ <script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script src="js/vehicles.js"></script>
+</body>
+</html>
