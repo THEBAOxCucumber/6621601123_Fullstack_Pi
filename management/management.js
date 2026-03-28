@@ -351,30 +351,30 @@ app.post('/trips', async (req, res) => {
         // ✅ insert
         await conn.query(
             `INSERT INTO trips (
-                id,
-                vehicle_id,
-                driver_id,
-                status,
-                origin,
-                destination,
-                distance_km,
-                cargo_type,
-                cargo_weight_kg,
-                started_at,
-                ended_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    id,
+    vehicle_id,
+    driver_id,
+    status,
+    origin,
+    destination,
+    distance_km,
+    cargo_type,
+    cargo_weight_kg,
+    started_at,
+    ended_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 id,
                 vehicle_id,
                 driver_id,
-                "SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED",
+                "SCHEDULED",          // ✅ ค่าเดียว
                 origin,
                 destination,
                 distance_km || null,
-                "GENERAL", "FRAGILE", "HAZARDOUS", "REFRIGERATED",
+                cargo_type || "GENERAL",  // ✅ ค่าเดียว
                 cargo_weight_kg || null,
-                started_at || null,
-                ended_at || null
+                started_at || new Date(),
+                ended_at || new Date()
             ]
         );
 
@@ -950,7 +950,7 @@ app.get('/users', authMiddleware, async (req, res) => {
 
 // GET (ทุกคนดูได้)
 app.get('/vehicles', async (req, res) => {
-  const [rows] = await conn.query(`
+    const [rows] = await conn.query(`
     SELECT 
       id,
       license_plate,
@@ -959,55 +959,180 @@ app.get('/vehicles', async (req, res) => {
       model,
       status,
       mileage_km,
-      next_service_km,
-      driver_name
+      next_service_km
     FROM vehicles
   `);
 
-  res.json({
-    success: true,
-    data: rows
-  });
+    res.json({
+        success: true,
+        data: rows
+    });
 });
 
 // POST (admin เท่านั้น)
 app.post('/vehicles', authMiddleware, async (req, res) => {
-  if (req.user.role !== 'ADMIN') {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
+    if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({ message: 'Forbidden' });
+    }
 
-  const { id, license_plate, status } = req.body;
+    const { id, license_plate, status } = req.body;
 
-  await conn.query(
-    'INSERT INTO vehicles (id, license_plate, status) VALUES (?, ?, ?)',
-    [id, license_plate, status]
-  );
+    await conn.query(
+        'INSERT INTO vehicles (id, license_plate, status) VALUES (?, ?, ?)',
+        [id, license_plate, status]
+    );
 
-  res.json({ success: true });
+    res.json({ success: true });
 });
 
 app.put('/vehicles/:id', async (req, res) => {
-  const { status } = req.body;
+    const { status } = req.body;
 
-  await conn.query(
-    'UPDATE vehicles SET status = ? WHERE id = ?',
-    [status, req.params.id]
-  );
+    await conn.query(
+        'UPDATE vehicles SET status = ? WHERE id = ?',
+        [status, req.params.id]
+    );
 
-  res.json({ success: true });
+    res.json({ success: true });
 });
 
 // DELETE
 app.delete('/vehicles/:id', authMiddleware, async (req, res) => {
-  if (req.user.role !== 'ADMIN') {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
+    if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({ message: 'Forbidden' });
+    }
 
-  await conn.query('DELETE FROM vehicles WHERE id = ?', [req.params.id]);
+    await conn.query('DELETE FROM vehicles WHERE id = ?', [req.params.id]);
 
-  res.json({ success: true });
+    res.json({ success: true });
 });
 
+app.get('/trips', async (req, res) => {
+  try {
+    const [rows] = await conn.query(`
+      SELECT 
+        id,
+        vehicle_id,
+        driver_id,
+        status,
+        origin,
+        destination,
+        distance_km,
+        cargo_type,
+        cargo_weight_kg,
+        started_at,
+        ended_at
+      FROM trips 
+    `);
+
+    res.json({
+      success: true,
+      data: rows
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+});
+
+
+app.get('/trips/:id', async (req, res) => {
+  try {
+    const [rows] = await conn.query(
+      'SELECT * FROM trips WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        error: "Trip not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      data: rows[0]
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+});
+
+app.put('/trips/:id', async (req, res) => {
+    if (req.user.role !== 'ADMIN') {
+  return res.status(403).json({ message: 'Forbidden' });
+}
+  try {
+    const {
+      status,
+      origin,
+      destination,
+      distance_km,
+      cargo_type,
+      cargo_weight_kg,
+      started_at,
+      ended_at
+    } = req.body;
+
+    await conn.query(
+      `UPDATE trips SET
+        status = ?,
+        origin = ?,
+        destination = ?,
+        distance_km = ?,
+        cargo_type = ?,
+        cargo_weight_kg = ?,
+        started_at = ?,
+        ended_at = ?
+      WHERE id = ?`,
+      [
+        status,
+        origin,
+        destination,
+        distance_km,
+        cargo_type,
+        cargo_weight_kg,
+        started_at,
+        ended_at,
+        req.params.id
+      ]
+    );
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+});
+
+app.delete('/trips/:id', async (req, res) => {
+    if (req.user.role !== 'ADMIN') {
+  return res.status(403).json({ message: 'Forbidden' });
+}
+  try {
+    const [result] = await conn.query(
+      'DELETE FROM trips WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        error: "Trip not found"
+      });
+    }
+
+    res.json({
+      success: true
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+});
 initMySQL();
 
 app.listen(port, () => {

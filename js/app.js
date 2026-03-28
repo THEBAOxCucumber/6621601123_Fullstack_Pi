@@ -5,7 +5,34 @@ function updateClock() {
   document.getElementById("clock").innerText =
     now.toLocaleTimeString();
 }
-setInterval(updateClock, 1000);
+
+
+function loadScript(src) {
+
+  // 🔥 ถ้าโหลดแล้ว → ไม่ต้องโหลดซ้ำ
+  if (document.querySelector(`script[src="${src}"]`)) {
+  console.log("Script already loaded:", src);
+  return; 
+}
+
+  const script = document.createElement("script");
+  script.src = src;
+  script.defer = true;
+
+  script.onload = () => {
+    console.log("Loaded:", src);
+
+    if (typeof initVehicles === "function") {
+      initVehicles();
+    }
+
+    if (typeof initTrips === "function") {
+    initTrips();  
+  }
+  };
+
+  document.body.appendChild(script);
+}
 
 // ===== NAVIGATION =====
 function showSection(id) {
@@ -18,11 +45,6 @@ function showSection(id) {
 
 async function navigate(page, el) {
 
-  // โหลดหน้า
-  const res = await fetch(page);
-  const html = await res.text();
-
-  document.getElementById("content").innerHTML = html;
 
   // เปลี่ยน active menu
   document.querySelectorAll(".nav-item").forEach(item => {
@@ -43,9 +65,22 @@ async function navigate(page, el) {
     document.getElementById("content").innerHTML = html;
 
  // 👇 ถ้าเป็นหน้า vehicles ให้โหลด JS
-  if (page.includes("vehicles")) {
-    loadScript("js/vehicles.js");
+   if (page.includes("vehicles")) {
+      loadScript("js/vehicles.js");
+      
   }
+
+  if (page.includes("trips")) {
+  loadScript("js/trips.js");
+}
+  if (page.includes("dashboard")) {
+    setTimeout(() => {
+    loadDashboard();
+    loadTripStats();   // 👈 เพิ่มตรงนี้
+  }, 100);
+}
+
+     
     // active menu
     document.querySelectorAll(".nav-item").forEach(item => {
       item.classList.remove("active");
@@ -58,56 +93,63 @@ async function navigate(page, el) {
   }
 }
 
-let vehicles = [];
+async function loadDashboard() {
+  try {
+    const res = await fetch("http://localhost:9000/vehicles");
+    const result = await res.json();
 
-async function fetchVehicles() {
-  const res = await fetch("http://localhost:9000/vehicles");
-  const result = await res.json();
+    const vehicles = result.data;
 
-  vehicles = result.data;
-  renderVehicles();
+    // 🔢 จำนวนรถทั้งหมด
+    document.getElementById("total").innerText = vehicles.length;
+
+    // 🚗 จำนวนประเภท
+    const types = new Set(vehicles.map(v => v.type));
+    document.getElementById("types").innerText =
+      types.size + " types in fleet";
+
+  } catch (err) {
+    console.error("โหลด dashboard ไม่สำเร็จ", err);
+  }
 }
+async function loadTripStats() {
+  console.log(trips);
+  try {
+    const res = await fetch("http://localhost:9000/trips");
+    const result = await res.json();
 
-async function loadPage(page) {
-  const res = await fetch(page);
-  const html = await res.text();
+    const trips = result.data;
 
-  document.getElementById("content").innerHTML = html;
+    const today = new Date().toISOString().slice(0, 10);
+
+    // วันนี้
+    const todayTrips = trips.filter(t =>
+      t.status === "IN_PROGRESS" &&
+      t.started_at &&
+      t.started_at.slice(0, 10) === today
+    );
+
+    // เมื่อวาน
+    const yesterdayDate = new Date();
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterday = yesterdayDate.toISOString().slice(0, 10);
+
+    const yesterdayTrips = trips.filter(t =>
+      t.status === "IN_PROGRESS" &&
+      t.started_at &&
+      t.started_at.slice(0, 10) === yesterday
+    );
+
+    // set ค่า
+    document.getElementById("activeTrips").innerText = todayTrips.length;
+
+    document.getElementById("compareTrips").innerText =
+      `${todayTrips.length - yesterdayTrips.length} vs yesterday`;
+
+  } catch (err) {
+    console.error("โหลด trip stats ไม่สำเร็จ", err);
+  }
 }
-
-// โหลดหน้า default
-loadPage("vehicles.html");
-
-function renderVehicles() {
-  const tbody = document.getElementById("vehicle-table");
-  tbody.innerHTML = "";
-
-  vehicles.forEach(v => {
-    tbody.innerHTML += `
-      <tr>
-        <td>${v.id}</td>
-        <td>${v.license_plate}</td>
-        <td>${v.status}</td>
-      </tr>
-    `;
-  });
-}
-
-function loadScript(src) {
-  const script = document.createElement("script");
-  script.src = src;
-  script.defer = true;
-
-  script.onload = () => {
-    if (typeof initVehicles === "function") {
-      initVehicles();
-    }
-  };
-
-  document.body.appendChild(script);
-}
-
-fetchVehicles();
 navigate('dashboard.html', document.querySelector('.nav-item'));
 // โหลด UI role ตอนเริ่ม
 window.auth.updateRoleUI();

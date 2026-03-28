@@ -1,4 +1,5 @@
-<div class="section">
+<link rel="stylesheet" href="css/vehicles.css"/>
+<div class="section active">
 
   <div class="section-header">
     <h2>Vehicle List</h2>
@@ -10,12 +11,12 @@
     <input id="search" placeholder="🔍 Search plate..." />
 
     <div class="filters">
-      <button onclick="setFilter('ALL')" class="active">All</button>
-      <button onclick="setFilter('ACTIVE')">Active</button>
-      <button onclick="setFilter('IDLE')">Idle</button>
-      <button onclick="setFilter('MAINTENANCE')">Maintenance</button>
-      <button onclick="setFilter('RETIRED')">Retired</button>
-    </div>
+  <button onclick="setFilter('ALL', this)" class="active">All</button>
+  <button onclick="setFilter('ACTIVE', this)">Active</button>
+  <button onclick="setFilter('IDLE', this)">Idle</button>
+  <button onclick="setFilter('MAINTENANCE', this)">Maintenance</button>
+  <button onclick="setFilter('RETIRED', this)">Retired</button>
+</div>
   </div>
 
   <!-- table -->
@@ -38,4 +39,3 @@
 
 </div>
 
-<!-- <script src="js/vehicles.js"></script> -->

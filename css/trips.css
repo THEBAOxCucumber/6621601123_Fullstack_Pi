@@ -1,0 +1,43 @@
+/* BADGE */
+.badge {
+  background: #1e293b;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+/* STATUS */
+.status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.status.in_progress {
+  color: #38bdf8;
+}
+
+.status.completed {
+  color: #00ff88;
+}
+
+.status.scheduled {
+  color: #facc15;
+}
+
+/* BUTTON */
+.btn-complete {
+  background: #00ff88;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-track {
+  background: transparent;
+  border: 1px solid #334155;
+  padding: 5px 10px;
+  border-radius: 8px;
+  color: #94a3b8;
+}

@@ -1,6 +1,13 @@
 let vehicles = [];
 let currentFilter = "ALL";
+let isInitialized = false; // 👈 กันยิงซ้ำ
+
 function initVehicles() {
+  if (isInitialized) return;   // 🔥 กันซ้ำ
+  isInitialized = true;
+
+  console.log("🔥 INIT VEHICLES");
+
   fetchVehicles();
 }
 // โหลดข้อมูลจาก backend
@@ -23,21 +30,32 @@ async function fetchVehicles() {
 }
 
 function renderVehicles() {
+  console.log("🚗 vehicles:", vehicles);
   const tbody = document.getElementById("vehicle-table");
-  const search = document.getElementById("search").value.toLowerCase();
+  const searchInput = document.getElementById("search");
+
+  console.log("TABLE:", tbody);
+  console.log("SEARCH:", searchInput);
+
+  if (!tbody || !searchInput) {
+    console.warn("⏳ DOM ยังไม่มา");
+    return;
+  }
+
+  const search = searchInput.value.toLowerCase();
 
   tbody.innerHTML = "";
 
   vehicles
     .filter(v => {
       if (currentFilter !== "ALL" && v.status !== currentFilter) return false;
-
       return v.license_plate.toLowerCase().includes(search);
     })
     .forEach(v => {
-
+        console.log("RENDER:", v);  
       const mileage = `
-        ${v.mileage_km?.toLocaleString()} / ${v.next_service_km?.toLocaleString()}
+        ${v.mileage_km?.toLocaleString() || 0} /
+        ${v.next_service_km?.toLocaleString() || 0}
       `;
 
       tbody.innerHTML += `
@@ -56,11 +74,7 @@ function renderVehicles() {
             </select>
           </td>
 
-          <td style="color: orange;">
-            ${mileage}
-          </td>
-
-          <td>${v.driver_name || '-'}</td>
+          <td style="color: orange;">${mileage}</td>
 
           <td>
             <button class="btn-history">History</button>
@@ -96,15 +110,7 @@ async function changeStatus(id, status) {
     body: JSON.stringify({ status })
   });
 
-  fetchVehicles();
-}
-
-async function deleteVehicle(id) {
-  await fetch(`http://localhost:9000/vehicles/${id}`, {
-    method: "DELETE"
-  });
-
-  fetchVehicles();
+  fetchVehicles(); // 👈 สำคัญ
 }
 
 async function deleteVehicle(id) {
@@ -113,10 +119,7 @@ async function deleteVehicle(id) {
   await fetch(`http://localhost:9000/vehicles/${id}`, {
     method: "DELETE"
   });
-
-  fetchVehicles();
 }
 
 
 
-fetchVehicles();

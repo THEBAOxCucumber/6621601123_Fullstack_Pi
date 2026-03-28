@@ -1,0 +1,11 @@
+.card {
+  background: linear-gradient(145deg, #0f172a, #1e293b);
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+}
+
+.card h1 {
+  color: #00ff88;
+  font-size: 40px;
+}
