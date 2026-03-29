@@ -1,11 +1,12 @@
-
-<link rel="stylesheet" href="css/trips.css"/>
+<link rel="stylesheet" href="css/trips.css" />
 
 <div class="section active">
 
   <div class="section-header">
     <h2>Trips</h2>
-    <button class="btn-add" onclick="createTrip()">+ New Trip</button>
+    <button class="admin-only btn-add" onclick="openCreateModal()">
+      + New Trip
+    </button>
   </div>
 
   <table class="vehicle-table">
@@ -17,6 +18,8 @@
         <th>ROUTE</th>
         <th>CARGO</th>
         <th>DISTANCE</th>
+        <th>START</th>
+        <th>END</th>
         <th>STATUS</th>
         <th>ACTIONS</th>
       </tr>
@@ -25,4 +28,42 @@
     <tbody id="trip-table"></tbody>
   </table>
 
+</div>
+
+<div id="tripModal" class="modal">
+  <div class="modal-content">
+
+    <h2>🚚 Create Trip</h2>
+
+    <input id="vehicle_id" placeholder="Vehicle ID" />
+<input id="driver_id" placeholder="Driver ID" />
+
+<input id="origin" placeholder="Origin" />
+<input id="destination" placeholder="Destination" />
+<input id="distance_km" type="number" placeholder="Distance (km)" />
+<select id="cargo_type" class="input">
+  <option value="GENERAL">GENERAL</option>
+  <option value="FRAGILE">FRAGILE</option>
+  <option value="HAZARDOUS">HAZARDOUS</option>
+  <option value="REFRIGERATED">REFRIGERATED</option>
+</select>
+
+<input id="cargo_weight_kg" type="number" placeholder="Cargo Weight (kg)" />
+<label>Start Time</label>
+<input id="started_at" type="datetime-local" />
+
+<label>End Time</label>
+<input id="ended_at" type="datetime-local" />
+<select id="edit_status" class="input">
+  <option value="SCHEDULED">SCHEDULED</option>
+  <option value="IN_PROGRESS">IN_PROGRESS</option>
+  <option value="COMPLETED">COMPLETED</option>
+  <option value="CANCELLED">CANCELLED</option>
+</select>
+    <div class="modal-actions">
+      <button onclick="submitTrip()">Save</button>
+      <button onclick="closeModal()">Cancel</button>
+    </div>
+
+  </div>
 </div>

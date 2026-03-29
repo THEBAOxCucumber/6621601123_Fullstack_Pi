@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="css/maintenance.css" />
+
+<div class="container">
+  <div class="header">
+    <h1>Maintenance Schedule</h1>
+    <button id="addBtn" class="btn-add">+ Add</button>
+  </div>
+
+  <div id="maintenanceList"></div>
+</div>
+
+<!-- modal -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <h3>✏️ Edit Maintenance</h3>
+
+    <input id="vehicle_id" placeholder="Vehicle ID" />
+    <select id="type">
+  <option value="OIL_CHANGE">OIL_CHANGE</option>
+  <option value="TIRE">TIRE</option>
+  <option value="BRAKE">BRAKE</option>
+  <option value="ENGINE">ENGINE</option>
+  <option value="INSPECTION">INSPECTION</option>
+  <option value="REPAIR">REPAIR</option>
+</select>
+    <input id="technician" placeholder="Technician" />
+    <input id="scheduled_at" type="datetime-local" />
+
+    <input id="completed_at" type="datetime-local" step="1" />
+    <select id="status">
+      <option value="SCHEDULED">SCHEDULED</option>
+      <option value="IN_PROGRESS">IN_PROGRESS</option>
+      <option value="COMPLETED">COMPLETED</option>
+    </select>
+<input id="mileage" placeholder="Mileage" />
+<input id="cost" placeholder="Cost" />
+<input id="notes" placeholder="Notes" />
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveMaintenance()">Save</button>
+      <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+

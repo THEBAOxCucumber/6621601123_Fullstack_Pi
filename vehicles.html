@@ -1,9 +1,11 @@
-<link rel="stylesheet" href="css/vehicles.css"/>
+<link rel="stylesheet" href="css/vehicles.css" />
 <div class="section active">
 
   <div class="section-header">
     <h2>Vehicle List</h2>
-    <button class="btn-add">+ Add Vehicle</button>
+    <button class="btn-add admin-only" onclick="openVehicleModal()">
+      + Add Vehicle
+    </button>
   </div>
 
   <!-- search + filter -->
@@ -11,12 +13,12 @@
     <input id="search" placeholder="🔍 Search plate..." />
 
     <div class="filters">
-  <button onclick="setFilter('ALL', this)" class="active">All</button>
-  <button onclick="setFilter('ACTIVE', this)">Active</button>
-  <button onclick="setFilter('IDLE', this)">Idle</button>
-  <button onclick="setFilter('MAINTENANCE', this)">Maintenance</button>
-  <button onclick="setFilter('RETIRED', this)">Retired</button>
-</div>
+      <button onclick="setFilter('ALL', this)" class="active">All</button>
+      <button onclick="setFilter('ACTIVE', this)">Active</button>
+      <button onclick="setFilter('IDLE', this)">Idle</button>
+      <button onclick="setFilter('MAINTENANCE', this)">Maintenance</button>
+      <button onclick="setFilter('RETIRED', this)">Retired</button>
+    </div>
   </div>
 
   <!-- table -->
@@ -27,8 +29,12 @@
         <th>PLATE</th>
         <th>TYPE</th>
         <th>BRAND/MODEL</th>
+        <th>YEAR</th>
+        <TH>FUEL TYPE</TH>
         <th>STATUS</th>
         <th>MILEAGE</th>
+        <th>LAST SERVICE</th>
+        <th>NEXT SERVICE</th>
         <th>DRIVER</th>
         <th>ACTIONS</th>
       </tr>
@@ -39,3 +45,50 @@
 
 </div>
 
+<div id="vehicleModal" class="modal">
+  <div class="modal-content">
+
+    <h2>🚗 Add Vehicle</h2>
+
+    <div class="form-group">
+      <input id="v_plate" placeholder="License Plate" />
+      <select id="v_type">
+        <option value="">-- Select Type --</option>
+        <option value="TRUCK">TRUCK</option>
+        <option value="VAN">VAN</option>
+        <option value="MOTORCYCLE">MOTORCYCLE</option>
+        <option value="PICKUP">PICKUP</option>
+      </select>
+    </div>
+    
+
+<select id="v_status">
+  <option value="ACTIVE">ACTIVE</option>
+  <option value="IDLE">IDLE</option>
+  <option value="MAINTENANCE">MAINTENANCE</option>
+  <option value="RETIRED">RETIRED</option>
+</select>
+    <div class="form-group">
+      <input id="v_brand" placeholder="Brand" />
+      <input id="v_model" placeholder="Model" />
+      <input id="v_year" placeholder="Year" />
+    </div>
+    <select id="v_fuel">
+  <option value="">-- Fuel Type --</option>
+  <option>DIESEL</option>
+  <option>GASOLINE</option>
+  <option>ELECTRIC</option>
+  <option>HYBRID</option>
+</select>
+<input id="v_mileage" placeholder="Mileage (km)" />
+<input id="v_last_service" placeholder="Last Service (km)" />
+<input id="v_next_service" placeholder="Next Service (km)" />
+    <select id="v_driver"></select>
+
+    <div class="modal-actions">
+      <button class="btn-save" onclick="submitVehicle()">Save</button>
+      <button class="btn-cancel" onclick="closeVehicleModal()">Cancel</button>
+    </div>
+
+  </div>
+</div>

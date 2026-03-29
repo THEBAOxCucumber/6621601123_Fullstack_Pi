@@ -83,7 +83,6 @@
   overflow: hidden;
 }
 
-/* HEADER */
 .vehicle-table thead {
   background: #020617;
 }
@@ -95,13 +94,13 @@
   color: #94a3b8;
 }
 
-/* BODY */
 .vehicle-table td {
+  line-height: 1.4;
+  color: #94a3b8;
   padding: 12px;
   border-top: 1px solid #1e293b;
 }
 
-/* ROW HOVER */
 .vehicle-table tbody tr:hover {
   background: #1e293b;
 }
@@ -111,8 +110,9 @@ select {
   background: #1e293b;
   color: white;
   border: none;
-  padding: 4px 6px;
+  padding: 6px;
   border-radius: 6px;
+  cursor: pointer;
 }
 
 /* ===== MILEAGE ===== */
@@ -139,6 +139,109 @@ select {
   border-radius: 6px;
   color: white;
   cursor: pointer;
+}
+
+/* ===== MODAL BACKDROP ===== */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal.show {
+  display: flex;
+}
+
+/* ===== MODAL BOX ===== */
+.modal-content {
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 25px;
+  border-radius: 14px;
+  width: 380px;
+  color: white;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  animation: popup 0.25s ease;
+}
+
+.modal-content h2 {
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+/* ===== FORM ===== */
+.modal-content input,
+.modal-content select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: none;
+  background: #1e293b;
+  color: white;
+}
+
+/* FOCUS EFFECT */
+.modal-content input:focus,
+.modal-content select:focus {
+  outline: none;
+  border: 1px solid #00ff88;
+  box-shadow: 0 0 0 2px rgba(0,255,136,0.2);
+}
+
+/* ===== BUTTON ===== */
+.modal-actions {
+  margin-top: 15px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #00ff88, #00c46a);
+  color: black;
+  font-weight: bold;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-save:hover {
+  transform: scale(1.05);
+}
+
+.btn-cancel {
+  background: #334155;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-cancel:hover {
+  background: #475569;
+}
+
+/* ===== PLACEHOLDER ===== */
+::placeholder {
+  color: #64748b;
+}
+
+/* ===== ANIMATION ===== */
+@keyframes popup {
+  from {
+    transform: scale(0.9) translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
 /* ===== RESPONSIVE ===== */

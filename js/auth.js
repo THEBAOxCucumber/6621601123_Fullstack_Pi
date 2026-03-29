@@ -24,21 +24,26 @@ function parseJwt(token) {
 // update ปุ่ม
 function updateRoleUI() {
   const btn = document.getElementById("role-btn");
-  if (!btn) return;
+  if (btn) {
+    btn.classList.remove("role-admin", "role-dispatcher");
 
-  btn.classList.remove("role-admin", "role-dispatcher");
-
-  if (currentUser.role === "ADMIN") {
-    btn.innerText = "ADMIN";
-    btn.classList.add("role-admin");
-  } 
-  else if (currentUser.role === "DISPATCHER") {
-    btn.innerText = "DISPATCHER";
-    btn.classList.add("role-dispatcher");
-  } 
-  else {
-    btn.innerText = "GUEST";
+    if (currentUser.role === "ADMIN") {
+      btn.innerText = "ADMIN";
+      btn.classList.add("role-admin");
+    } 
+    else if (currentUser.role === "DISPATCHER") {
+      btn.innerText = "DISPATCHER";
+      btn.classList.add("role-dispatcher");
+    } 
+    else {
+      btn.innerText = "GUEST";
+    }
   }
+
+  // 🔥 ซ่อน element ที่ GUEST ใช้ไม่ได้
+  document.querySelectorAll(".admin-only").forEach(el => {
+  el.style.display = window.auth.canManage() ? "inline-block" : "none";
+  });
 }
 
 // click ปุ่ม
@@ -61,6 +66,31 @@ function handleAuthClick() {
 window.auth = {
   getUser: () => currentUser,
   getToken: () => currentUser.token,
-  handleAuthClick,
-  updateRoleUI
+
+  isAdmin() {
+    return currentUser.role === "ADMIN";
+  },
+
+  isDispatcher() {
+    return currentUser.role === "DISPATCHER";
+  },
+
+  isGuest() {
+    return currentUser.role === "GUEST";
+  },
+
+  canManage() {
+    return this.isAdmin() || this.isDispatcher();
+  },
+
+  canDelete() {
+  return currentUser.role === "ADMIN";
+},
+
+canEdit() {
+  return currentUser.role === "ADMIN" || currentUser.role === "DISPATCHER";
+},
+
+  updateRoleUI,
+  handleAuthClick
 };

@@ -51,6 +51,8 @@ const initMySQL = async () => {
     }
 };
 
+
+
 // POST /users
 app.post('/users', async (req, res) => {
     try {
@@ -124,96 +126,91 @@ const authMiddleware = (req, res, next) => {
 
 // POST /vehicles
 app.post('/vehicles', async (req, res) => {
-    try {
-        const {
-            license_plate,
-            type,
-            driver_id,
-            brand,
-            model,
-            year,
-            fuel_type,
-            mileage_km,
-            last_service_km,
-            next_service_km
-        } = req.body;
+  try {
+    const {
+      license_plate,
+      type,
+      status,
+      driver_id,
+      brand,
+      model,
+      year,
+      fuel_type,
+      mileage_km,
+      last_service_km,
+      next_service_km
+    } = req.body;
 
-        // ✅ validation
-        if (!license_plate || !type) {
-            return res.status(400).json({
-                error: {
-                    code: 'INVALID_INPUT',
-                    message: 'license_plate และ type จำเป็นต้องมี',
-                    details: {}
-                }
-            });
+    if (!license_plate || !type) {
+      return res.status(400).json({
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'license_plate และ type จำเป็นต้องมี'
         }
-
-        // ✅ check license ซ้ำ
-        const [existing] = await conn.query(
-            'SELECT id FROM vehicles WHERE license_plate = ?',
-            [license_plate]
-        );
-
-        if (existing.length > 0) {
-            return res.status(400).json({
-                error: {
-                    code: 'DUPLICATE_LICENSE',
-                    message: 'license_plate นี้มีอยู่แล้ว',
-                    details: {}
-                }
-            });
-        }
-
-        const id = await generateVehiclesId();
-
-        // ✅ insert
-        await conn.query(
-            `INSERT INTO vehicles (
-                id,
-                license_plate,
-                type,
-                status,
-                driver_id,
-                brand,
-                model,
-                year,
-                fuel_type,
-                mileage_km,
-                last_service_km,
-                next_service_km
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                id,
-                license_plate,
-                "TRUCK", "VAN", "MOTORCYCLE", "PICKUP",
-                "ACTIVE", "IDLE", "MAINTENANCE", "RETIRED",
-                driver_id || null,
-                brand || null,
-                model || null,
-                year || null,
-                "DIESEL", "GASOLINE", "ELECTRIC", "HYBRID",
-                mileage_km || 0,
-                last_service_km || null,
-                next_service_km || null
-            ]
-        );
-
-        res.json({
-            success: true,
-            data: { id }
-        });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({
-            error: {
-                code: 'SERVER_ERROR',
-                message: err.message,
-                details: {}
-            }
-        });
+      });
     }
+
+    const [existing] = await conn.query(
+      'SELECT id FROM vehicles WHERE license_plate = ?',
+      [license_plate]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({
+        error: {
+          code: 'DUPLICATE_LICENSE',
+          message: 'license_plate นี้มีอยู่แล้ว'
+        }
+      });
+    }
+
+    const id = await generateVehiclesId();
+
+    await conn.query(
+      `INSERT INTO vehicles (
+        id,
+        license_plate,
+        type,
+        status,
+        driver_id,
+        brand,
+        model,
+        year,
+        fuel_type,
+        mileage_km,
+        last_service_km,
+        next_service_km
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        license_plate,
+        type,                 // ✅ ใช้ค่าจาก frontend
+        status || "ACTIVE",   // ✅ default
+        driver_id || null,
+        brand || null,
+        model || null,
+        year || null,
+        fuel_type || null,
+        mileage_km || 0,
+        last_service_km || null,
+        next_service_km || null
+      ]
+    );
+
+    res.json({
+      success: true,
+      data: { id }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: {
+        code: 'SERVER_ERROR',
+        message: err.message
+      }
+    });
+  }
 });
 
 // POST /drivers
@@ -818,7 +815,7 @@ async function generateCheckpointId() {
 async function generateMaintenanceId() {
     const [rows] = await conn.query(`
         SELECT id FROM maintenance
-        ORDER BY id DESC
+        ORDER BY created_at DESC
         LIMIT 1
     `);
 
@@ -827,7 +824,18 @@ async function generateMaintenanceId() {
     }
 
     const lastId = rows[0].id;
+
+    // ✅ check format
+    if (!lastId.startsWith('mnt_')) {
+        return 'mnt_001';
+    }
+
     const number = parseInt(lastId.split('_')[1]);
+
+    if (isNaN(number)) {
+        return 'mnt_001';
+    }
+
     const newNumber = number + 1;
 
     return 'mnt_' + String(newNumber).padStart(3, '0');
@@ -949,40 +957,66 @@ app.get('/users', authMiddleware, async (req, res) => {
 });
 
 // GET (ทุกคนดูได้)
+
 app.get('/vehicles', async (req, res) => {
-    const [rows] = await conn.query(`
+  const [rows] = await conn.query(`
     SELECT 
-      id,
-      license_plate,
-      type,
-      brand,
-      model,
-      status,
+      v.id,
+      v.license_plate,
+      v.type,
+      v.status,
       mileage_km,
-      next_service_km
-    FROM vehicles
+        last_service_km,
+        next_service_km,
+      v.brand,
+      v.model,
+      v.year,
+      v.fuel_type,
+      v.driver_id,
+      COALESCE(v.fuel_type, '-') AS fuel_type,
+      COALESCE(d.name, '-') AS driver_name
+    FROM vehicles v
+    LEFT JOIN drivers d ON v.driver_id = d.id
   `);
 
-    res.json({
-        success: true,
-        data: rows
-    });
+  res.json({ success: true, data: rows });
 });
 
-// POST (admin เท่านั้น)
-app.post('/vehicles', authMiddleware, async (req, res) => {
-    if (req.user.role !== 'ADMIN') {
-        return res.status(403).json({ message: 'Forbidden' });
-    }
+app.get('/vehicles/:id', async (req, res) => {
+  const { id } = req.params;
 
-    const { id, license_plate, status } = req.body;
+  const [rows] = await conn.query(`
+    SELECT 
+      v.id,
+      v.license_plate,
+      v.type,
+      v.status,
+      v.mileage_km,
+      mileage_km,
+  last_service_km,
+  next_service_km,
+      v.brand,
+      v.model,
+      v.year,
+      v.fuel_type,
+      v.driver_id,
+      COALESCE(d.name, '-') AS driver_name
+    FROM vehicles v
+    LEFT JOIN drivers d ON v.driver_id = d.id
+    WHERE v.id = ?
+  `, [id]);
 
-    await conn.query(
-        'INSERT INTO vehicles (id, license_plate, status) VALUES (?, ?, ?)',
-        [id, license_plate, status]
-    );
+  if (rows.length === 0) {
+    return res.status(404).json({
+      success: false,
+      message: "Vehicle not found"
+    });
+  }
 
-    res.json({ success: true });
+  res.json({
+    success: true,
+    data: rows[0]
+  });
 });
 
 app.put('/vehicles/:id', async (req, res) => {
@@ -1008,8 +1042,8 @@ app.delete('/vehicles/:id', authMiddleware, async (req, res) => {
 });
 
 app.get('/trips', async (req, res) => {
-  try {
-    const [rows] = await conn.query(`
+    try {
+        const [rows] = await conn.query(`
       SELECT 
         id,
         vehicle_id,
@@ -1025,59 +1059,59 @@ app.get('/trips', async (req, res) => {
       FROM trips 
     `);
 
-    res.json({
-      success: true,
-      data: rows
-    });
+        res.json({
+            success: true,
+            data: rows
+        });
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "SERVER_ERROR" });
+    }
 });
 
 
 app.get('/trips/:id', async (req, res) => {
-  try {
-    const [rows] = await conn.query(
-      'SELECT * FROM trips WHERE id = ?',
-      [req.params.id]
-    );
+    try {
+        const [rows] = await conn.query(
+            'SELECT * FROM trips WHERE id = ?',
+            [req.params.id]
+        );
 
-    if (rows.length === 0) {
-      return res.status(404).json({
-        error: "Trip not found"
-      });
+        if (rows.length === 0) {
+            return res.status(404).json({
+                error: "Trip not found"
+            });
+        }
+
+        res.json({
+            success: true,
+            data: rows[0]
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: "SERVER_ERROR" });
     }
-
-    res.json({
-      success: true,
-      data: rows[0]
-    });
-
-  } catch (err) {
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
 });
 
-app.put('/trips/:id', async (req, res) => {
-    if (req.user.role !== 'ADMIN') {
-  return res.status(403).json({ message: 'Forbidden' });
-}
-  try {
-    const {
-      status,
-      origin,
-      destination,
-      distance_km,
-      cargo_type,
-      cargo_weight_kg,
-      started_at,
-      ended_at
-    } = req.body;
+app.put('/trips/:id', authMiddleware, async (req, res) => {
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'DISPATCHER') {
+        return res.status(403).json({ message: 'Forbidden' });
+    }
+    try {
+        const {
+            status,
+            origin,
+            destination,
+            distance_km,
+            cargo_type,
+            cargo_weight_kg,
+            started_at,
+            ended_at
+        } = req.body;
 
-    await conn.query(
-      `UPDATE trips SET
+        await conn.query(
+            `UPDATE trips SET
         status = ?,
         origin = ?,
         destination = ?,
@@ -1087,53 +1121,197 @@ app.put('/trips/:id', async (req, res) => {
         started_at = ?,
         ended_at = ?
       WHERE id = ?`,
-      [
-        status,
-        origin,
-        destination,
-        distance_km,
-        cargo_type,
-        cargo_weight_kg,
-        started_at,
-        ended_at,
-        req.params.id
-      ]
-    );
+            [
+                status,
+                origin,
+                destination,
+                distance_km,
+                cargo_type,
+                cargo_weight_kg,
+                started_at,
+                ended_at,
+                req.params.id
+            ]
+        );
 
-    res.json({ success: true });
+        res.json({ success: true });
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
-});
-
-app.delete('/trips/:id', async (req, res) => {
-    if (req.user.role !== 'ADMIN') {
-  return res.status(403).json({ message: 'Forbidden' });
-}
-  try {
-    const [result] = await conn.query(
-      'DELETE FROM trips WHERE id = ?',
-      [req.params.id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        error: "Trip not found"
-      });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "SERVER_ERROR" });
     }
-
-    res.json({
-      success: true
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "SERVER_ERROR" });
-  }
 });
-initMySQL();
+
+app.delete('/trips/:id', authMiddleware, async (req, res) => {
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'DISPATCHER') {
+        return res.status(403).json({ message: 'Forbidden' });
+    }
+    try {
+        const [result] = await conn.query(
+            'DELETE FROM trips WHERE id = ?',
+            [req.params.id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                error: "Trip not found"
+            });
+        }
+
+        res.json({
+            success: true
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "SERVER_ERROR" });
+    }
+});
+
+app.get('/checkpoints', async (req, res) => {
+    try {
+        const [rows] = await conn.query(`
+      SELECT * FROM checkpoints
+      ORDER BY trip_id, sequence ASC
+    `);
+
+        res.json({ success: true, data: rows });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/checkpoints/:trip_id', async (req, res) => {
+  const { trip_id } = req.params;
+
+  const [rows] = await conn.query(`
+    SELECT *
+    FROM checkpoints
+    WHERE trip_id = ?
+    ORDER BY sequence ASC
+  `, [trip_id]);
+
+  res.json({ success: true, data: rows });
+});
+app.put('/checkpoints/:id', async (req, res) => {
+  const { id } = req.params;
+
+  // 🔍 หา checkpoint ปัจจุบัน
+  const [rows] = await conn.query(
+    'SELECT * FROM checkpoints WHERE id = ?',
+    [id]
+  );
+
+  if (!rows.length) {
+    return res.json({ success: false, message: 'Not found' });
+  }
+
+  const current = rows[0];
+
+  // 🔥 1. update ของเดิม → DEPARTED
+  await conn.query(
+    'UPDATE checkpoints SET status = "DEPARTED" WHERE id = ?',
+    [id]
+  );
+
+  // 🔥 2. สร้าง checkpoint ใหม่ (next step)
+  await conn.query(
+    `INSERT INTO checkpoints (id, trip_id, location_name, status)
+     VALUES (UUID(), ?, ?, "ARRIVED")`,
+    [
+      current.trip_id,
+      current.location_name // หรือจะเปลี่ยนเป็น next location ก็ได้
+    ]
+  );
+
+  res.json({ success: true });
+});
+
+app.delete('/checkpoints/:id', async (req, res) => {
+    try {
+        const [result] = await conn.query(
+            'DELETE FROM checkpoints WHERE id = ?',
+            [req.params.id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                error: "Checkpoint not found"
+            });
+        }
+
+        res.json({ success: true });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/drivers', async (req, res) => {
+  const [rows] = await conn.query(`
+    SELECT id, name FROM drivers
+  `);
+
+  res.json({
+    success: true,
+    data: rows
+  });
+});
+
+app.get('/maintenance', async (req, res) => {
+  const [rows] = await conn.query(`
+    SELECT m.*, v.license_plate
+    FROM maintenance m
+    JOIN vehicles v ON m.vehicle_id = v.id
+    ORDER BY m.scheduled_at ASC
+  `);
+
+  res.json({ success: true, data: rows });
+});
+
+app.put('/maintenance/:id', async (req, res) => {
+  const {
+    type,
+    technician,
+    scheduled_at,
+    completed_at,
+    status
+  } = req.body;
+
+  await conn.query(`
+    UPDATE maintenance
+    SET 
+      type=?,
+      technician=?,
+      scheduled_at=?,
+      completed_at=?,
+      status=?
+    WHERE id=?
+  `, [
+    type,
+    technician,
+    scheduled_at,
+    completed_at || null,
+    status,
+    req.params.id
+  ]);
+
+  res.json({ success: true });
+});
+
+app.delete('/maintenance/:id', async (req, res) => {
+    if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({ message: 'Forbidden' });
+    }
+  await conn.query(`DELETE FROM maintenance WHERE id=?`, [req.params.id]);
+  res.json({ success: true });
+});
+
+
+initMySQL(
+    
+);
 
 app.listen(port, () => {
     console.log(`🚀 Server running on port ${port}`);

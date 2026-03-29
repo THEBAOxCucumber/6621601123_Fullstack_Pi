@@ -1,0 +1,231 @@
+/* ===== CARD ===== */
+.tracker-card {
+  background: #0f172a;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 20px;
+  color: #e5e7eb;
+}
+
+/* ===== INFO ===== */
+.tracker-info {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+/* ===== PROGRESS CONTAINER ===== */
+.progress-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  width: 100%;
+}
+
+/* ===== STEP ===== */
+.step {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+
+/* เส้นเชื่อม */
+.step::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: #334155;
+  z-index: -1;
+}
+
+.step:last-child::after {
+  display: none;
+}
+
+.step.done::after {
+  background: #00ff88;
+}
+
+/* ===== CIRCLE ===== */
+.circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+  background: #020617;
+  cursor: pointer;
+}
+
+/* ยังไม่ถึง */
+.circle.pending {
+  border-color: #334155;
+  color: #64748b;
+}
+
+/* กำลังถึง */
+.circle.active {
+  border-color: #38bdf8;
+  background: rgba(56,189,248,0.2);
+  color: #38bdf8;
+}
+
+/* ผ่านแล้ว */
+.circle.done {
+  background: #00ff88;
+  color: black;
+  border-color: #00ff88;
+}
+
+/* ===== LABEL ===== */
+.label {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* BADGE */
+.badge {
+  background: #1e293b;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+/* origin */
+.circle.done {
+  background: #00ff88;
+  color: black;
+}
+
+/* destination */
+.circle.pending {
+  border-color: #f43f5e;
+  color: #f43f5e;
+}
+body {
+  background: #0b1220;
+  color: #e6edf3;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* CARD */
+.tracker-card {
+  background: #111a2e;
+  border-radius: 12px;
+  padding: 25px;
+  border: 1px solid #1f2a44;
+}
+
+/* HEADER INFO */
+.tracker-info {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.tracker-info div {
+  font-size: 14px;
+  color: #9fb3c8;
+}
+
+.tracker-info b {
+  display: block;
+  font-size: 16px;
+  color: #fff;
+  margin-top: 4px;
+}
+
+/* PROGRESS LINE */
+.progress-line {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin-top: 30px;
+}
+
+/* เส้นหลัก */
+.progress-line::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #1f2a44;
+  z-index: 0;
+}
+
+/* เส้น progress (เขียว) */
+.progress-line::after {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 0;
+  height: 4px;
+  width: var(--progress, 0%);
+  background: #22c55e;
+  z-index: 1;
+  transition: 0.4s;
+}
+
+/* STEP */
+.step {
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  width: 120px;
+}
+
+/* CIRCLE */
+.circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1f2a44;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+  transition: 0.3s;
+}
+
+/* DONE */
+.circle.done {
+  background: #22c55e;
+  color: #fff;
+  box-shadow: 0 0 10px #22c55e;
+}
+
+/* ACTIVE */
+.circle.active {
+  border: 3px solid #3b82f6;
+  background: transparent;
+  color: #3b82f6;
+}
+
+/* PENDING */
+.circle.pending {
+  opacity: 0.3;
+}
+
+/* LABEL */
+.label {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #9fb3c8;
+}
+
+.step.done .label {
+  color: #22c55e;
+}
+
+.step.active .label {
+  color: #3b82f6;
+}
