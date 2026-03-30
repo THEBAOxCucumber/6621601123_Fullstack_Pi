@@ -21,6 +21,8 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 };
+
+
 app.use(cors(corsOptions));
 
 app.use(session({
@@ -34,7 +36,7 @@ app.use(session({
     }
 }));
 
-let conn = null;
+let conn;
 
 const initMySQL = async () => {
     try {
@@ -982,6 +984,41 @@ app.get('/vehicles', async (req, res) => {
   res.json({ success: true, data: rows });
 });
 
+// routes/vehicles.js
+app.get('/vehicles/status-summary', async (req, res) => {
+  try {
+    const [rows] = await conn.query(`
+      SELECT status, COUNT(*) as total
+      FROM vehicles
+      GROUP BY status
+    `);
+
+    const result = {
+      ACTIVE: 0,
+      IDLE: 0,
+      MAINTENANCE: 0,
+      RETIRED: 0
+    };
+
+    rows.forEach(r => {
+      result[r.status] = r.total;
+    });
+
+    // ✅ ไม่มีรถก็ต้อง success!
+    res.json({
+      success: true,
+      data: result
+    });
+
+  } catch (err) {
+    console.error("status-summary error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+});
+
 app.get('/vehicles/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -1070,6 +1107,25 @@ app.get('/trips', async (req, res) => {
     }
 });
 
+app.get('/trip-distance-trend', async (req, res) => {
+  try {
+    const [rows] = await conn.query(`
+     SELECT 
+  DATE(started_at) AS trip_date,
+  COALESCE(SUM(distance_km), 0) AS total_distance
+FROM trips
+WHERE started_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+GROUP BY DATE(started_at)
+ORDER BY trip_date;
+    `);
+
+    res.json({ success: true, data: rows });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
+  }
+});
 
 app.get('/trips/:id', async (req, res) => {
     try {
@@ -1094,52 +1150,22 @@ app.get('/trips/:id', async (req, res) => {
     }
 });
 
-app.put('/trips/:id', authMiddleware, async (req, res) => {
-    if (req.user.role !== 'ADMIN' && req.user.role !== 'DISPATCHER') {
-        return res.status(403).json({ message: 'Forbidden' });
-    }
-    try {
-        const {
-            status,
-            origin,
-            destination,
-            distance_km,
-            cargo_type,
-            cargo_weight_kg,
-            started_at,
-            ended_at
-        } = req.body;
+app.put('/trips/:id', async (req, res) => {
+  try {
+    const { status } = req.body;
 
-        await conn.query(
-            `UPDATE trips SET
-        status = ?,
-        origin = ?,
-        destination = ?,
-        distance_km = ?,
-        cargo_type = ?,
-        cargo_weight_kg = ?,
-        started_at = ?,
-        ended_at = ?
-      WHERE id = ?`,
-            [
-                status,
-                origin,
-                destination,
-                distance_km,
-                cargo_type,
-                cargo_weight_kg,
-                started_at,
-                ended_at,
-                req.params.id
-            ]
-        );
+    await conn.query(`
+      UPDATE trips
+      SET status = ?, ended_at = NOW()
+      WHERE id = ?
+    `, [status, req.params.id]);
 
-        res.json({ success: true });
+    res.json({ success: true });
 
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "SERVER_ERROR" });
-    }
+  } catch (err) {
+    console.error("❌ TRIP UPDATE ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/trips/:id', authMiddleware, async (req, res) => {
@@ -1197,37 +1223,28 @@ app.get('/checkpoints/:trip_id', async (req, res) => {
 app.put('/checkpoints/:id', async (req, res) => {
   const { id } = req.params;
 
-  // 🔍 หา checkpoint ปัจจุบัน
   const [rows] = await conn.query(
     'SELECT * FROM checkpoints WHERE id = ?',
     [id]
   );
 
   if (!rows.length) {
-    return res.json({ success: false, message: 'Not found' });
+    return res.json({ success: false });
   }
 
-  const current = rows[0];
+  const cp = rows[0];
 
-  // 🔥 1. update ของเดิม → DEPARTED
-  await conn.query(
-    'UPDATE checkpoints SET status = "DEPARTED" WHERE id = ?',
-    [id]
-  );
+  if (cp.status !== "ARRIVED") {
+    await conn.query(`
+      UPDATE checkpoints
+      SET status = 'ARRIVED',
+          arrived_at = NOW()
+      WHERE id = ?
+    `, [id]);
+  }
 
-  // 🔥 2. สร้าง checkpoint ใหม่ (next step)
-  await conn.query(
-    `INSERT INTO checkpoints (id, trip_id, location_name, status)
-     VALUES (UUID(), ?, ?, "ARRIVED")`,
-    [
-      current.trip_id,
-      current.location_name // หรือจะเปลี่ยนเป็น next location ก็ได้
-    ]
-  );
-
-  res.json({ success: true });
+  return res.json({ success: true });
 });
-
 app.delete('/checkpoints/:id', async (req, res) => {
     try {
         const [result] = await conn.query(
@@ -1307,6 +1324,7 @@ app.delete('/maintenance/:id', async (req, res) => {
   await conn.query(`DELETE FROM maintenance WHERE id=?`, [req.params.id]);
   res.json({ success: true });
 });
+
 
 
 initMySQL(

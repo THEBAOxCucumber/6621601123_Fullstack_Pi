@@ -1,49 +1,64 @@
-<link rel="stylesheet" href="css/tracker.css">
+
+
+ <link rel="stylesheet" href="css/tracker.css">
 
 <div class="section active">
 
   <div class="section-header">
     <h2>Checkpoint Progress</h2>
-<div>
-    <select id="tripSelect"></select>
-    <button id="addCheckpointBtn">+ Add Checkpoint</button>
-  </div>
+
+    <div class="header-actions">
+      <select id="tripSelect"></select>
+      <button id="addCheckpointBtn" class="btn-primary">
+        + Add Checkpoint
+      </button>
+    </div>
   </div>
 
   <div class="tracker-card">
 
-<div class="tracker-info">
+    <div class="tracker-info">
 
-  <div>
-    VEHICLE
-    <b id="vehicle">-</b>
-  </div>
+      <div>VEHICLE <b id="vehicle">-</b></div>
+      <div>DRIVER <b id="driver">-</b></div>
+      <div>ROUTE <b id="route">-</b></div>
+      <div>DISTANCE <b id="distance">-</b></div>
+      <div>CARGO <b id="cargo">-</b></div>
 
-  <div>
-    DRIVER
-    <b id="driver">-</b>
-  </div>
-
-  <div>
-    ROUTE
-    <b id="route">-</b>
-  </div>
-
-  <div>
-    DISTANCE
-    <b id="distance">-</b>
-  </div>
-
-  <div>
-    CARGO
-    <b id="cargo">-</b>
-  </div>
-
-</div>
+    </div>
 
     <!-- PROGRESS -->
     <div class="progress-line" id="progressLine"></div>
 
+    <!-- 🔥 สำคัญ -->
+    <div id="checkpoint-list"></div>
+<div class="finish-wrapper">
+  <button id="finishTripBtn" class="btn-success">
+    📍 ถึงปลายทาง
+  </button>
+</div>
   </div>
-<div id="checkpoint-list"></div>
+
+</div>
+<div id="checkpointModal" class="modal hidden">
+  <div class="modal-box">
+    <h3>➕ เพิ่ม Checkpoint</h3>
+
+    <label>Location</label>
+    <input id="cpLocation" placeholder="เช่น นครสวรรค์" />
+
+    <label>Purpose</label>
+    <select id="cpPurpose">
+      <option value="FUEL">⛽ FUEL</option>
+      <option value="REST">🛌 REST</option>
+      <option value="DELIVERY">📦 DELIVERY</option>
+      <option value="PICKUP">📥 PICKUP</option>
+      <option value="INSPEC">🔧 INSPEC</option>
+    </select>
+
+    <div class="modal-actions">
+      <button id="saveCpBtn" class="btn-primary">Save</button>
+      <button id="closeCpBtn" class="btn-secondary">Cancel</button>
+    </div>
+  </div>
 </div>

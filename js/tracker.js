@@ -3,32 +3,32 @@
 let trips = [];
 let currentTripId = null;
 let checkpoints = [];
-
+let isUpdating = false;
 // ✅ ไม่ชนอีกแน่นอน
 const currentUser = window.auth?.getUser?.() || { role: "GUEST" };
 
 const params = new URLSearchParams(window.location.search);
 const tripId = params.get("trip_id");
 
-console.log("Tracking trip:", tripId);
+
 
 // ================= INIT =================
 function initTracker() {
 
-  setInterval(() => {
-    if (currentTripId) {
-      loadCheckpoints(currentTripId);
-    }
-  }, 3000);
+  setInterval(async () => {
+  if (!currentTripId || isUpdating) return;
 
+  // await autoUpdateCheckpoint(); // 🔥 ทำก่อน
+  await loadCheckpoints(currentTripId); // แล้วค่อย render
+}, 3000);
   if (currentUser.role === "GUEST") {
     document.getElementById("addCheckpointBtn").style.display = "none";
   }
 
-  setupAddCheckpoint(); // ✅ เพิ่มตรงนี้
+  setupAddCheckpoint();
+  setupFinishTrip();
   loadTrips();
 }
-
 // ================= LOAD TRIPS =================
 async function loadTrips() {
   const res = await fetch("http://localhost:9000/trips");
@@ -51,22 +51,96 @@ async function loadTrips() {
     loadCheckpoints(currentTripId);
   };
 
-  if (trips.length) {
-    currentTripId = trips[0].id;
-    select.value = currentTripId;
-    loadCheckpoints(currentTripId);
+  const exists = trips.find(t => t.id === tripId);
+
+if (tripId && exists) {
+  currentTripId = tripId;
+} else if (trips.length) {
+  currentTripId = trips[0].id;
+}
+
+select.value = currentTripId;
+loadCheckpoints(currentTripId);
+}
+
+function renderTripInfo() {
+  const trip = trips.find(t => t.id === currentTripId);
+  if (!trip) return;
+
+  document.getElementById("vehicle").innerText = trip.vehicle_id || "-";
+  document.getElementById("driver").innerText = trip.driver_id || "-";
+  document.getElementById("route").innerText = `${trip.origin} → ${trip.destination}`;
+  document.getElementById("distance").innerText = trip.distance_km + " km";
+  document.getElementById("cargo").innerText = trip.cargo_type || "-";
+}
+
+function renderCheckpoints(data) {
+  const container = document.getElementById("checkpoint-list");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  data.forEach((cp, index) => {
+
+    const disabled = false;
+
+    container.innerHTML += `
+      <div style="padding:10px; border-bottom:1px solid #ddd;">
+       <b>${index + 1}. ${cp.location_name}</b>
+<div style="font-size:12px;color:#888;">
+  ${
+    cp.arrived_at
+      ? new Date(cp.arrived_at).toLocaleString()
+      : "ยังไม่ถึง"
   }
+</div>
+       <span style="
+  margin-left:10px;
+  color:${
+    cp.status === "ARRIVED" ? "green" : "gray"
+  };
+">
+  ${
+    cp.status === "ARRIVED" ? "ARRIVED" : "PENDING"
+  }
+</span>
+
+        ${
+          currentUser.role !== "GUEST"
+            ? `<button 
+                ${disabled ? "disabled style='opacity:0.5;cursor:not-allowed'" : ""}
+                onclick="updateCheckpoint('${cp.id}', ${index})">
+                ✔ Done
+               </button>`
+            : ""
+        }
+      </div>
+    `;
+  });
 }
 
 // ================= LOAD CHECKPOINT =================
 async function loadCheckpoints(tripId) {
-  const res = await fetch(`http://localhost:9000/checkpoints/${tripId}`);
-  const result = await res.json();
+  try {
+    const res = await fetch(`http://localhost:9000/checkpoints/${tripId}`);
+    const result = await res.json();
 
-  checkpoints = result.data;
+    checkpoints = result.data.sort((a, b) => a.sequence - b.sequence);
 
-  renderCheckpoints(checkpoints);
-  renderProgress();
+    renderCheckpoints(checkpoints);
+    renderProgress();
+    renderTripInfo();
+
+    if (checkpoints.length > 0 &&
+    checkpoints.every(cp => cp.status === "ARRIVED")) {
+      console.log("🚚 ถึงปลายทางแล้ว");
+    }
+
+  } catch (err) {
+    console.error("โหลด checkpoint ไม่ได้", err);
+  }
+
+
 }
 function renderProgress() {
   const container = document.getElementById("progressLine");
@@ -77,9 +151,13 @@ function renderProgress() {
   const trip = trips.find(t => t.id === currentTripId);
   if (!trip) return;
 
+ const started = checkpoints.some(cp => cp.status !== "PENDING");
+  const last = checkpoints[checkpoints.length - 1];
+
+const finished = trip.status === "COMPLETED";
   // 🟢 ORIGIN
   container.innerHTML += `
-    <div class="step done">
+    <div class="step ${started ? "done" : "active"}">
       <div class="circle">🏁</div>
       <div class="label">${trip.origin}</div>
     </div>
@@ -89,91 +167,145 @@ function renderProgress() {
   checkpoints.forEach(cp => {
     let statusClass = "pending";
 
-    if (cp.status === "DEPARTED") statusClass = "done";
-    if (cp.status === "ARRIVED") statusClass = "active";
+   if (cp.status === "ARRIVED") {
+  statusClass = "done";
+} else {
+  statusClass = "pending";
+}
 
     container.innerHTML += `
       <div class="step ${statusClass}">
-        <div class="circle">${cp.status === "DEPARTED" ? "✔" : ""}</div>
+        <div class="circle">
+          ${cp.status === "ARRIVED" ? "✔" : ""}
+        </div>
         <div class="label">${cp.location_name}</div>
       </div>
     `;
   });
 
   // 🔴 DESTINATION
-  container.innerHTML += `
-    <div class="step">
-      <div class="circle">📍</div>
-      <div class="label">${trip.destination}</div>
-    </div>
-  `;
+
+container.innerHTML += `
+  <div class="step ${finished ? "done" : ""}">
+    <div class="circle">📍</div>
+    <div class="label">${trip.destination}</div>
+  </div>
+`;
+
+  const totalSteps = checkpoints.length + 1; // + destination
+const doneSteps = checkpoints.filter(c => c.status === "ARRIVED").length;
+
+let percent = (doneSteps / totalSteps) * 100;
+
+if (trip.status === "COMPLETED") {
+  percent = 100;
 }
-function renderCheckpoints(data) {
-  const container = document.getElementById("checkpoint-list");
-  if (!container) return;
 
-  container.innerHTML = "";
-
-  data.forEach((cp, index) => {
-    container.innerHTML += `
-      <div style="padding:10px; border-bottom:1px solid #ddd;">
-        <b>${cp.location_name}</b>
-        <span style="margin-left:10px;">${cp.status}</span>
-
-        ${
-          currentUser.role !== "GUEST"
-            ? `<button onclick="updateCheckpoint('${cp.id}', '${cp.status}', ${index})">
-                ✔ Done
-               </button>`
-            : ""
-        }
-      </div>
-    `;
-  });
+  container.style.setProperty("--progress", percent + "%");
 }
 
 function setupAddCheckpoint() {
-  const btn = document.getElementById("addCheckpointBtn");
-  if (!btn) return;
 
-  btn.onclick = async () => {
-
-    const location = prompt("กรอกชื่อ location:");
-    if (!location) return;
-
-    await fetch("http://localhost:9000/checkpoints", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        trip_id: currentTripId,
-        location_name: location
-      })
-    });
-
-    loadCheckpoints(currentTripId);
+  document.getElementById("addCheckpointBtn").onclick = () => {
+    document.getElementById("checkpointModal").classList.remove("hidden");
   };
+
+  document.getElementById("closeCpBtn").onclick = () => {
+    document.getElementById("checkpointModal").classList.add("hidden");
+  };
+
 }
 // ================= UPDATE =================
-async function updateCheckpoint(id, status, index) {
+document.getElementById("saveCpBtn").onclick = async () => {
+  const location = document.getElementById("cpLocation").value;
+  const purpose = document.getElementById("cpPurpose").value;
 
-  if (index > 0) {
-    const prev = checkpoints[index - 1];
-    if (prev.status !== "DEPARTED") {
-      alert("❌ ต้องทำจุดก่อนหน้าให้เสร็จก่อน");
-      return;
-    }
+  if (!location) {
+    alert("กรอก location");
+    return;
   }
+
+  await fetch("http://localhost:9000/checkpoints", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + window.auth.getToken()
+    },
+    body: JSON.stringify({
+      trip_id: currentTripId,
+      location_name: location,
+      purpose: purpose
+    })
+  });
+
+  document.getElementById("checkpointModal").classList.add("hidden");
+
+  await loadCheckpoints(currentTripId);
+};
+async function updateCheckpoint(id,index) {
+  const cp = checkpoints[index];
+if (!cp) return;
+  // if (index > 0) {
+  //   const prev = checkpoints[index - 1];
+  //     if (prev.status !== "ARRIVED") {
+  //     alert("❌ ต้องออกจากจุดก่อนหน้าให้เสร็จก่อน");
+  //     return;
+  //   }
+  // }
 
   await fetch(`http://localhost:9000/checkpoints/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status: "DEPARTED" })
+    body: JSON.stringify({ status: "ARRIVED" })
   });
 
-  await loadCheckpoints(currentTripId); // ✅ แก้แล้ว
+  await loadCheckpoints(currentTripId);
 }
+window.updateCheckpoint = updateCheckpoint;
+window.autoUpdateCheckpoint = () => {};
 
-// ✅ export ให้ app.js เรียกได้
 window.initTracker = initTracker;
+
+function setupFinishTrip() {
+  const btn = document.getElementById("finishTripBtn");
+  if (!btn) return;
+
+  // GUEST กดไม่ได้
+  if (currentUser.role === "GUEST") {
+    btn.style.display = "none";
+    return;
+  }
+
+  btn.onclick = async () => {
+  if (!checkpoints.length) return;
+
+  const last = checkpoints[checkpoints.length - 1];
+
+  // 1️⃣ mark checkpoint สุดท้าย
+  await fetch(`http://localhost:9000/checkpoints/${last.id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "ARRIVED" })
+  });
+
+  // 🔥 2️⃣ mark trip = COMPLETED (สำคัญมาก)
+  await fetch(`http://localhost:9000/trips/${currentTripId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      status: "COMPLETED",
+      ended_at: new Date().toISOString()
+    })
+  });
+
+  // 🔥 3️⃣ reload trips (สำคัญมาก)
+  await loadTrips();
+
+  // 🔥 4️⃣ reload checkpoints
+  await loadCheckpoints(currentTripId);
+
+  alert("🚚 ถึงปลายทางแล้ว");
+};
+}
 
 })();

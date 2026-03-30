@@ -1,12 +1,19 @@
-<link rel="stylesheet" href="css/style.css" />
-<link rel="stylesheet" href="css/dashboard.css" />
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/chart.css" />
+</head>
+
+<body>
+
 <div class="section active">
 
   <h2>Dashboard</h2>
 
   <div class="card-grid">
 
-    <!-- TOTAL VEHICLES -->
     <div class="card">
       <div>Total Vehicles</div>
       <h1 id="total">0</h1>
@@ -14,16 +21,34 @@
     </div>
 
     <div class="card">
-  <div>ACTIVE TRIPS TODAY</div>
-  <h1 id="activeTrips">0</h1>
-  <small id="compareTrips">0 vs yesterday</small> 
-</div>
+      <div>ACTIVE TRIPS TODAY</div>
+      <h1 id="activeTrips">0</h1>
+      <small id="compareTrips">0 vs yesterday</small> 
+    </div>
 
     <div class="card">
-  <div class="title">TOTAL DISTANCE TODAY</div>
-  <div class="value" id="totalDistance">0</div>
-  <div class="sub">km across all trips</div>
-</div>
-  </div>
+      <div class="title">TOTAL DISTANCE TODAY</div>
+      <div class="value" id="totalDistance">0</div>
+      <div class="sub">km across all trips</div>
+    </div>
 
+    <!-- PIE -->
+    <div class="chart-card status-card">
+      <h3>VEHICLES BY STATUS</h3>
+      <canvas id="statusChart"></canvas>
+    </div>
+
+    <!-- BAR -->
+    <div class="chart-card distance-card">
+      <h3>TRIP DISTANCE TREND (7 DAYS)</h3>
+      <canvas id="distanceChart"></canvas>
+    </div>
+
+  </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+<script src="js/chart.js"></script>
+
+</body>
+</html>

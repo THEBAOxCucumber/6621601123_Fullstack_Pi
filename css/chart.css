@@ -1,0 +1,44 @@
+/* =========================
+   CHART CARD
+========================= */
+.chart-card {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border-radius: 16px;
+  padding: 20px;
+  color: #e2e8f0;
+  position: relative;
+  overflow: hidden;
+
+  height: 320px; /* 🔥 สำคัญสุด */
+}
+
+/* glow effect */
+.chart-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at top right,
+    rgba(59, 130, 246, 0.15),
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* =========================
+   CANVAS FIX (สำคัญ)
+========================= */
+.chart-card canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* =========================
+   TITLE
+========================= */
+.chart-card h3 {
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #cbd5f5;
+}

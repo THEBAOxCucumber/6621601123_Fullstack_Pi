@@ -3,7 +3,7 @@ let editId = null;
 
 // mock role (เปลี่ยนเป็นจาก login จริงได้)
 const user = {
-  role: "admin" // หรือ "dispatcher"
+  role: "guest" // 🔥 ลองเปลี่ยนเป็น guest
 };
 
 // // ซ่อนปุ่มถ้าไม่ใช่ admin
